@@ -1,7 +1,7 @@
+require("dotenv").config();
 const express = require("express");
 const morgan = require("morgan");
-
-const path = require("path");
+const Person = require("./models/person");
 
 morgan.token("content", function getContent(req, res) {
   if (req.method === "POST") {
@@ -58,39 +58,32 @@ let persons = [
 ];
 
 app.get("/api/persons", (request, response) => {
-  response.json(persons);
+  Person.find({}).then((persons) => {
+    response.json(persons);
+  });
 });
 
 app.get("/api/persons/:id", (request, response) => {
   const id = request.params.id;
-  const person = persons.find((person) => person.id === id);
-
-  if (!person) {
-    return response
-      .status(404)
-      .json({ error: `person with id ${id} does not exist` });
-  }
-
-  return response.json(person);
+  Person.findById(id).then((person) => {
+    if (!person) {
+      return response
+        .status(404)
+        .json({ error: `person with id ${id} does not exist` });
+    }
+    response.json(person);
+  });
 });
 
 app.get("/info", (request, response) => {
   const date = Date().toString();
-
-  response.send(`
+  Person.find({}).then((persons) => {
+    response.send(`
         <div>Phonebook has info for ${persons.length} people</div>
         <div>${date}</div>
     `);
+  });
 });
-
-const isNameExists = (name) => {
-  const person = persons.find((person) => person.name === name);
-  return person || false;
-};
-
-const generateRandomId = () => {
-  return String(Math.floor(Math.random() * 1000));
-};
 
 app.post("/api/persons", (request, response) => {
   const body = request.body;
@@ -101,45 +94,37 @@ app.post("/api/persons", (request, response) => {
     });
   }
 
-  if (isNameExists(body.name)) {
-    return response.status(400).json({
-      error: "name must be unique",
-    });
-  }
-
   if (!body.number) {
     return response.status(400).json({
       error: "number missing",
     });
   }
 
-  const person = {
-    id: generateRandomId(),
+  const person = new Person({
     name: body.name,
     number: body.number,
-  };
+  });
 
-  persons = persons.concat(person);
-
-  return response.status(201).json(person);
+  person.save().then((result) => {
+    console.log(`added ${result.name} number ${result.number} to phonebook`);
+    return response.status(201).json(person);
+  });
 });
 
 app.delete("/api/persons/:id", (request, response) => {
   const id = request.params.id;
-  const person = persons.find((person) => person.id === id);
-
-  if (!person) {
-    return response
-      .status(404)
-      .json({ error: `person with id ${id} does not exist` });
-  }
-
-  persons = persons.filter((person) => person.id !== id);
-
-  response.status(204).end();
+  Person.findByIdAndDelete(id).then((person) => {
+    if (!person) {
+      return response
+        .status(404)
+        .json({ error: `person with id ${id} does not exist` });
+    } else {
+      return response.status(204).end();
+    }
+  });
 });
 
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
