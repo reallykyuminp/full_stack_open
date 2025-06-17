@@ -28,23 +28,3 @@ personSchema.set("toJSON", {
 });
 
 module.exports = mongoose.model("Person", personSchema);
-
-if (process.argv.length === 3) {
-  console.log("phonebook: \n");
-  Person.find({}).then((result) => {
-    result.forEach((person) => {
-      console.log(person.name, " ", person.number, "\n");
-    });
-    mongoose.connection.close();
-  });
-} else {
-  const person = new Person({
-    name: newName,
-    number: newNumber,
-  });
-
-  person.save().then((result) => {
-    
-    mongoose.connection.close();
-  });
-}
