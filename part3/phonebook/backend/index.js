@@ -1,6 +1,8 @@
 const express = require("express");
 const morgan = require("morgan");
 
+const path = require("path");
+
 morgan.token("content", function getContent(req, res) {
   if (req.method === "POST") {
     return `{ "name": "${req.body.name}", "number": "${req.body.number}" }`;
@@ -11,7 +13,7 @@ morgan.token("content", function getContent(req, res) {
 
 const app = express();
 
-app.use(express.static('dist'))
+app.use(express.static("dist"));
 app.use(express.json());
 app.use(
   morgan((tokens, req, res) => {
@@ -31,6 +33,12 @@ app.use(
       .join(" ");
   })
 );
+
+app.use(express.static(path.join(__dirname, "../frontend/dist")));
+
+app.get("*", (req, res) => {
+  res.sendFile(path.join(__dirname, "../frontend/dist/index.html"));
+});
 
 let persons = [
   {
